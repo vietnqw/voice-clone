@@ -87,7 +87,10 @@ app.mount("/static", StaticFiles(directory="webapp/static"), name="static")
 
 @app.get("/", include_in_schema=False)
 def index():
-    return FileResponse("webapp/static/index.html")
+    return FileResponse(
+        "webapp/static/index.html",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
 
 
 @app.get("/api/health")
