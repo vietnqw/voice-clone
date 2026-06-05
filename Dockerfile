@@ -2,6 +2,9 @@ FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
 WORKDIR /app
 
+# Install system deps: ffmpeg for audio format support
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 # Install uv for fast dependency resolution
 RUN pip install --no-cache-dir uv
 
