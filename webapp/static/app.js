@@ -18,6 +18,7 @@ function app() {
     modelReady: false,
     modelError: null,
     nonverbalTags: NONVERBAL_TAGS,
+    sidebarOpen: false,
     _healthTimer: null,
 
     modal: {
