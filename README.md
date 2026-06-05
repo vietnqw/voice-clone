@@ -29,6 +29,35 @@ Open `http://localhost:8000` in your browser.
 
 > If HuggingFace is unreachable, set `HF_ENDPOINT=https://hf-mirror.com` in `docker-compose.yml`.
 
+## Development
+
+To run the app locally without Docker:
+
+**1. Install dependencies**
+
+```bash
+pip install uv
+uv sync --extra webapp
+```
+
+**2. Run the server**
+
+```bash
+uvicorn webapp.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Open `http://localhost:8000`. The `--reload` flag auto-restarts the server on code changes.
+
+> The first run downloads the OmniVoice model (~2 GB) from HuggingFace and caches it in `~/.cache/huggingface/`.
+
+**Environment variables**
+
+| Variable | Default | Description |
+|---|---|---|
+| `MODEL_NAME` | `k2-fsa/OmniVoice` | HuggingFace model ID |
+| `DATA_DIR` | `webapp/data` | Directory for voice metadata and audio files |
+| `HF_ENDPOINT` | _(unset)_ | Set to `https://hf-mirror.com` if HuggingFace is unreachable |
+
 ## Cloudflare Tunnel (optional)
 
 To expose the app over HTTPS via a [remotely-managed Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/get-started/create-remote-tunnel/):
