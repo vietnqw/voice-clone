@@ -1,0 +1,19 @@
+# Cloudflare Tunnel configuration for voice.vietngoquang.com
+#
+# One-time setup (run on the host, not inside Docker):
+#   1. cloudflared tunnel login
+#   2. cloudflared tunnel create omnivoice
+#      → Note the tunnel UUID shown in the output
+#   3. Add DNS record in Cloudflare dashboard:
+#      Type: CNAME  Name: voice  Target: <TUNNEL_UUID>.cfargotunnel.com  Proxy: ON
+#   4. Copy ~/.cloudflared/<TUNNEL_UUID>.json to this directory as credentials.json
+#   5. Replace <TUNNEL_UUID> below with the actual UUID
+#   6. docker compose up -d
+
+tunnel: <TUNNEL_UUID>
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: voice.vietngoquang.com
+    service: http://tts-app:8000
+  - service: http_status:404

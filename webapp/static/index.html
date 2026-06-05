@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniVoice — Tổng Hợp Tiếng Việt</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
+        },
+      },
+    };
+  </script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"
+  ></script>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body
+  class="h-full bg-gray-50 font-sans antialiased"
+  x-data="app()"
+  x-init="init()"
+  x-cloak
+>
+  <!-- ─── Header ─────────────────────────────────────────────────────────── -->
+  <header
+    class="h-14 bg-white border-b border-gray-100 flex items-center px-6 gap-3 shrink-0 shadow-sm"
+  >
+    <!-- Mic icon -->
+    <svg
+      class="w-5 h-5 text-indigo-600"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+      />
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"
+      />
+    </svg>
+    <span class="font-semibold text-gray-900 text-sm tracking-tight"
+      >OmniVoice</span
+    >
+    <span class="text-gray-300 text-sm">·</span>
+    <span class="text-gray-400 text-sm">Tổng Hợp Tiếng Việt</span>
+
+    <!-- Status -->
+    <div class="ml-auto flex items-center gap-2">
+      <template x-if="modelError">
+        <span class="flex items-center gap-1.5 text-xs text-red-600 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+          Lỗi tải mô hình
+        </span>
+      </template>
+      <template x-if="!modelError && !modelReady">
+        <span class="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
+          <span
+            class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"
+          ></span>
+          Đang tải mô hình…
+        </span>
+      </template>
+      <template x-if="!modelError && modelReady">
+        <span class="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          Sẵn sàng
+        </span>
+      </template>
+    </div>
+  </header>
+
+  <!-- ─── Two-panel layout ────────────────────────────────────────────────── -->
+  <div class="flex" style="height: calc(100vh - 3.5rem)">
+
+    <!-- Left sidebar: Voice samples -->
+    <aside
+      class="w-72 bg-white border-r border-gray-100 flex flex-col shrink-0"
+      @click.outside="stopPreview()"
+    >
+      <!-- Sidebar header -->
+      <div
+        class="flex items-center justify-between px-4 py-3 border-b border-gray-100"
+      >
+        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
+          >Giọng Mẫu</span
+        >
+        <button
+          @click="openAddModal()"
+          class="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors px-2 py-1 rounded-md hover:bg-indigo-50"
+        >
+          <svg
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Thêm Mẫu
+        </button>
+      </div>
+
+      <!-- Sample list -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-1 samples-list">
+        <!-- Empty state -->
+        <div
+          x-show="samples.length === 0"
+          class="flex flex-col items-center justify-center h-48 text-center px-4"
+        >
+          <svg
+            class="w-8 h-8 text-gray-300 mb-3"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19 10v2a7 7 0 0 1-14 0v-2"
+            />
+          </svg>
+          <p class="text-sm text-gray-400">Chưa có giọng mẫu</p>
+          <p class="text-xs text-gray-300 mt-1">Nhấn "Thêm Mẫu" để bắt đầu</p>
+        </div>
+
+        <!-- Sample cards -->
+        <template x-for="sample in samples" :key="sample.id">
+          <div
+            @click="select(sample.id)"
+            :class="[
+              'relative cursor-pointer rounded-xl p-3 group transition-all duration-150 overflow-hidden',
+              selectedId === sample.id
+                ? 'bg-indigo-50 ring-1 ring-indigo-200'
+                : 'hover:bg-gray-50',
+            ]"
+          >
+            <!-- Name row -->
+            <div class="flex items-center gap-1.5 mb-1">
+              <!-- Default star -->
+              <button
+                @click.stop="setDefault(sample.id)"
+                :title="sample.is_default ? 'Mặc định' : 'Đặt làm mặc định'"
+                class="shrink-0 transition-colors"
+                :class="sample.is_default ? 'text-amber-400' : 'text-gray-200 hover:text-amber-300'"
+              >
+                <svg
+                  class="w-3.5 h-3.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                  />
+                </svg>
+              </button>
+              <span
+                class="text-sm font-medium truncate flex-1"
+                :class="selectedId === sample.id ? 'text-indigo-700' : 'text-gray-800'"
+                x-text="sample.name"
+              ></span>
+            </div>
+
+            <!-- Transcript preview -->
+            <p
+              class="text-xs text-gray-400 leading-relaxed line-clamp-2 pl-5"
+              x-text="sample.transcript"
+            ></p>
+
+            <!-- Action buttons (always visible when playing, hover otherwise) -->
+            <div
+              :class="[
+                'flex items-center gap-3 mt-2.5 pl-5 transition-opacity duration-150',
+                playingId === sample.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+              ]"
+            >
+              <button
+                @click.stop="previewSample(sample.id)"
+                :class="[
+                  'text-xs transition-colors flex items-center gap-1',
+                  playingId === sample.id
+                    ? 'text-indigo-500 hover:text-indigo-700'
+                    : 'text-gray-400 hover:text-gray-700',
+                ]"
+              >
+                <!-- Stop icon -->
+                <svg x-show="playingId === sample.id" class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="5" y="5" width="14" height="14" rx="2"/>
+                </svg>
+                <!-- Play icon -->
+                <svg x-show="playingId !== sample.id" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span x-text="playingId === sample.id ? 'Dừng' : 'Nghe'"></span>
+              </button>
+              <button
+                @click.stop="openEditModal(sample)"
+                class="text-xs text-gray-400 hover:text-indigo-600 transition-colors"
+              >
+                Sửa
+              </button>
+              <button
+                @click.stop="confirmDelete(sample)"
+                class="text-xs text-gray-400 hover:text-red-500 transition-colors"
+              >
+                Xóa
+              </button>
+            </div>
+
+            <!-- Playing gradient bar -->
+            <div
+              x-show="playingId === sample.id"
+              class="playing-bar absolute bottom-0 left-0 right-0 h-0.5"
+            ></div>
+          </div>
+        </template>
+      </div>
+    </aside>
+
+    <!-- ─── Right: TTS panel ──────────────────────────────────────────────── -->
+    <main class="flex-1 flex flex-col p-6 gap-4 min-w-0 overflow-hidden">
+
+      <!-- Selected voice chip -->
+      <div class="flex items-center gap-2">
+        <template x-if="selectedSample">
+          <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-1.5 shadow-sm">
+            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+            <span class="text-xs font-medium text-gray-700" x-text="selectedSample.name"></span>
+          </div>
+        </template>
+        <template x-if="!selectedSample">
+          <span class="text-xs text-gray-400 italic">Chưa chọn giọng mẫu</span>
+        </template>
+      </div>
+
+      <!-- Non-verbal tag toolbar + punctuation tip -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-gray-400 shrink-0">Chèn:</span>
+        <template x-for="t in nonverbalTags" :key="t.tag">
+          <button
+            @click="insertTag(t.tag)"
+            :disabled="generating"
+            class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <span x-text="t.label"></span>
+            <span class="text-gray-300 font-mono" x-text="t.tag"></span>
+          </button>
+        </template>
+        <span class="ml-auto text-xs text-gray-300" title="Dùng dấu phẩy (,) để ngắt ngắn, dấu chấm (.) để ngắt câu, dấu (…) để ngừng lâu hơn">
+          <svg class="w-3.5 h-3.5 inline -mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Dấu câu kiểm soát chỗ ngừng
+        </span>
+      </div>
+
+      <!-- Text input -->
+      <div class="flex-1 flex flex-col min-h-0">
+        <textarea
+          x-model="text"
+          x-ref="textInput"
+          :disabled="generating"
+          placeholder="Nhập văn bản tiếng Việt cần đọc…"
+          class="flex-1 w-full border border-gray-200 rounded-2xl p-5 text-gray-900 text-sm leading-7 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed transition-all duration-150 bg-white shadow-sm"
+        ></textarea>
+      </div>
+
+      <!-- Controls row -->
+      <div class="flex items-center gap-4 justify-between">
+        <!-- Speed slider -->
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="text-xs text-gray-500 shrink-0">Tốc độ</span>
+          <input
+            type="range"
+            x-model.number="speed"
+            min="0.6"
+            max="1.2"
+            step="0.05"
+            :disabled="generating"
+            class="w-28 accent-indigo-600 disabled:opacity-40"
+          />
+          <span class="text-xs text-gray-500 tabular-nums shrink-0 whitespace-nowrap" x-text="`${speed.toFixed(2)} · ${speedLabel}`"></span>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <span class="text-xs text-gray-300 tabular-nums" x-text="`${text.length} ký tự`"></span>
+          <button
+          @click="generate()"
+          :disabled="generating || !selectedId || !text.trim() || !modelReady"
+          class="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shadow-sm shadow-indigo-200"
+        >
+          <!-- Spinner -->
+          <svg
+            x-show="generating"
+            class="animate-spin w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            ></path>
+          </svg>
+          <!-- Play icon -->
+          <svg
+            x-show="!generating"
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+            />
+          </svg>
+          <span x-text="generating ? 'Đang tạo…' : 'Tạo Audio'"></span>
+        </button>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div
+        x-show="error"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-1"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2"
+      >
+        <svg class="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm text-red-700" x-text="error"></span>
+      </div>
+
+      <!-- Audio output -->
+      <div
+        x-show="audioUrl"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-1"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        class="bg-white border border-gray-200 rounded-2xl px-5 py-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kết Quả</span>
+          <a
+            :href="audioUrl"
+            download="output.wav"
+            class="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-1"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Tải xuống
+          </a>
+        </div>
+        <audio :src="audioUrl" controls></audio>
+      </div>
+    </main>
+  </div>
+
+  <!-- ─── Add / Edit Modal ─────────────────────────────────────────────────── -->
+  <div
+    x-show="modal.open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+  >
+    <!-- Backdrop -->
+    <div
+      class="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+      @click="closeModal()"
+    ></div>
+
+    <!-- Modal card -->
+    <div
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0 scale-95"
+      x-transition:enter-end="opacity-100 scale-100"
+      class="relative bg-white rounded-2xl shadow-2xl shadow-black/10 w-full max-w-md mx-4 p-6"
+    >
+      <h2
+        class="text-base font-semibold text-gray-900 mb-5"
+        x-text="modal.isEdit ? 'Sửa Giọng Mẫu' : 'Thêm Giọng Mẫu'"
+      ></h2>
+
+      <!-- Name field -->
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">Tên giọng mẫu</label>
+        <input
+          x-model="modal.name"
+          type="text"
+          placeholder="VD: Giọng Miền Bắc"
+          class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+        />
+      </div>
+
+      <!-- Audio file -->
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">
+          File âm thanh
+          <span class="text-gray-400 font-normal">(WAV, MP3 · 3–10 giây)</span>
+          <template x-if="modal.isEdit">
+            <span class="text-gray-400 font-normal"> · tùy chọn nếu muốn thay</span>
+          </template>
+        </label>
+        <input
+          type="file"
+          @change="handleAudioFile($event)"
+          accept="audio/*"
+          class="hidden"
+          x-ref="audioInput"
+        />
+        <button
+          @click="$refs.audioInput.click()"
+          class="w-full border border-dashed border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-left transition-colors hover:border-indigo-300 hover:bg-indigo-50/40"
+          :class="modal.audioFile ? 'text-gray-700' : 'text-gray-400'"
+        >
+          <span x-text="modal.audioFile ? modal.audioFile.name : 'Chọn file âm thanh…'"></span>
+        </button>
+        <audio
+          x-show="modal.audioPreviewUrl"
+          :src="modal.audioPreviewUrl"
+          controls
+          class="mt-2"
+        ></audio>
+      </div>
+
+      <!-- Transcript -->
+      <div class="mb-6">
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">
+          Nội dung âm thanh
+          <span class="text-gray-400 font-normal">(bắt buộc · giúp chất lượng giọng tốt hơn)</span>
+        </label>
+        <textarea
+          x-model="modal.transcript"
+          rows="3"
+          placeholder="Nhập đúng nội dung lời nói trong file âm thanh…"
+          class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all leading-relaxed"
+        ></textarea>
+      </div>
+
+      <!-- Footer buttons -->
+      <div class="flex gap-3 justify-end">
+        <button
+          @click="closeModal()"
+          class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          @click="saveModal()"
+          :disabled="!canSaveModal || modal.saving"
+          class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          <span x-text="modal.saving ? 'Đang lưu…' : 'Lưu'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Delete confirmation dialog ──────────────────────────────────────── -->
+  <div
+    x-show="deleteDialog.show"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+  >
+    <div
+      class="absolute inset-0 bg-black/25 backdrop-blur-[2px]"
+      @click="deleteDialog.show = false"
+    ></div>
+    <div
+      x-transition:enter="transition ease-out duration-150"
+      x-transition:enter-start="opacity-0 scale-95"
+      x-transition:enter-end="opacity-100 scale-100"
+      class="relative bg-white rounded-2xl shadow-xl shadow-black/10 w-80 mx-4 p-5"
+    >
+      <h3 class="text-sm font-semibold text-gray-900 mb-1">Xóa giọng mẫu?</h3>
+      <p class="text-sm text-gray-500 mb-5">
+        "<span class="font-medium text-gray-700" x-text="deleteDialog.name"></span>"
+        sẽ bị xóa vĩnh viễn.
+      </p>
+      <div class="flex gap-3 justify-end">
+        <button
+          @click="deleteDialog.show = false"
+          class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          @click="doDelete()"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors"
+        >
+          Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden audio preview player -->
+  <audio x-ref="previewPlayer" class="hidden"></audio>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

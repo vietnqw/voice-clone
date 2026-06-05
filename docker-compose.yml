@@ -1,0 +1,35 @@
+services:
+  tts-app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist voice sample metadata and audio files
+      - ./webapp/data:/app/webapp/data
+      # Cache HuggingFace model downloads across restarts
+      - hf-cache:/root/.cache/huggingface
+    environment:
+      - MODEL_NAME=k2-fsa/OmniVoice
+      - DATA_DIR=/app/webapp/data
+      # Uncomment if HuggingFace is unreachable:
+      # - HF_ENDPOINT=https://hf-mirror.com
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflare:/etc/cloudflared:ro
+    depends_on:
+      - tts-app
+
+volumes:
+  hf-cache:

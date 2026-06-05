@@ -1,0 +1,12 @@
+{
+  "samples": [
+    {
+      "id": "395d98e4-501d-4d1c-a47a-656e8e5acb2e",
+      "name": "Trump",
+      "audio_path": "webapp/data/audio/395d98e4-501d-4d1c-a47a-656e8e5acb2e.wav",
+      "transcript": "Trong khi đó, tình hình tại Trung Đông cũng đặt ra những thách thức không nhỏ. Cuộc chiến ở dải Gaza, với mức độ leo thang đáng báo động, có khả năng vẫn tiếp tục khi ông Trump nhậm chức.",
+      "is_default": true,
+      "created_at": "2026-06-05T06:55:56.210508"
+    }
+  ]
+}
