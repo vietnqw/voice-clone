@@ -33,17 +33,26 @@ dependencies = [
     "torch>=2.4",
     "torchaudio>=2.4",
     "transformers>=5.3.0",
-    "accelerate",
     "pydub",
-    "gradio",
-    "tensorboardX",
-    "webdataset",
     "numpy",
     "soundfile",
     "librosa",
 ]
 
 [project.optional-dependencies]
+
+webapp = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+]
+
+training = [
+    "accelerate",
+    "gradio",
+    "tensorboardX",
+    "webdataset",
+]
 
 eval = [
     "jiwer==3.1.0",       # WER
