@@ -1,3 +1,17 @@
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('sidebar-open');
+  document.getElementById('sidebar-overlay').classList.remove('hidden');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('sidebar-open');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.contains('sidebar-open')
+    ? closeSidebar()
+    : openSidebar();
+}
+
 const NONVERBAL_TAGS = [
   { label: 'Cười', tag: '[laughter]' },
   { label: 'Thở dài', tag: '[sigh]' },
@@ -18,7 +32,6 @@ function app() {
     modelReady: false,
     modelError: null,
     nonverbalTags: NONVERBAL_TAGS,
-    sidebarOpen: false,
     _healthTimer: null,
 
     modal: {
