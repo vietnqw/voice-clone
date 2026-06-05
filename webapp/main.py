@@ -76,6 +76,11 @@ async def lifespan(app: FastAPI):
     store = VoiceStore(DATA_DIR)
     asyncio.create_task(_load_model())
     yield
+    try:
+        from loky import get_reusable_executor
+        get_reusable_executor().shutdown(wait=False, kill_workers=True)
+    except Exception:
+        pass
 
 
 # ── App ───────────────────────────────────────────────────────────────────────
