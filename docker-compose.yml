@@ -2,8 +2,6 @@ services:
   tts-app:
     build: .
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     volumes:
       # Persist voice sample metadata and audio files
       - ./webapp/data:/app/webapp/data
